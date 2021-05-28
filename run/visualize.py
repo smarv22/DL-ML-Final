@@ -2,6 +2,40 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import json
+
+
+"""
+Loads and displays a activation
+"""
+def load_and_display_activation_image(model_name, conv_filter_number):
+    activations = json.load(open("visualizations/{}.json".format(model_name)))
+    activation = activations[conv_filter_number][1]
+    display_learned_image(activation)
+
+
+"""
+Create visualizations
+"""
+def create_visualizations(pre_models, image_shape, fr):
+    for name, model in pre_models.items():
+        visualizations = [] 
+        conv_layer_number = 0
+        for layer_number, layer in enumerate(model.layers):
+            if not isinstance(layer, tf.keras.layers.Conv2D):
+                continue
+            #Create sub model
+            outputs = layer.output
+            sub_model = tf.keras.models.Model(model.layers[0].input, outputs)
+            start_image = tf.zeros((1, image_shape[0], image_shape[1], image_shape[2]))
+            #fr is the index of the filter being visualized, or "all" to visualize the total layer activation
+            img = gradient_ascent_loop(sub_model, start_image, 250, 0.001, None, fr=fr)
+            visualizations.append((layer_number, img.numpy()[0].tolist()))
+            print("MODEL: {}    LAYER NUMBER: {}    CONV LAYER NUMBER: {}".format(name, layer_number, conv_layer_number))
+            #display_learned_image(img[0])
+            conv_layer_number += 1
+        print("\n")
+    json.dump(visualizations, open("visualizations/{}.json".format(name), "w"))
 
 
 """
@@ -18,8 +52,7 @@ def compute_loss(model, img, fr):
             #scaling = tf.reduce_prod(tf.cast(tf.shape(activation), "float32"))
             #Indexing tries and removes padding, needs to be specified per model, or just ignored
             #loss += (tf.reduce_sum(tf.square(activation[:, 2:-2, 2:-2])) / scaling)
-            #Used by tensorflows example (and literally everywhere else I have seen, we may need to evaluate which is best)
-            loss += tf.math.reduce_mean(activation[:, 2:-2, 2:-2])
+            loss += tf.math.reduce_mean(activation)
     else:
         #Loss for a specific filter
         activation = features[:, :, :, fr]

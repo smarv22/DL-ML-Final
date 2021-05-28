@@ -1,27 +1,30 @@
-from keras.applications import InceptionResNetV2, InceptionV3
 import tensorflow as tf
+import argparse
 import sys
 
 import visualize
 
 
+#Add optional arguments for control flow
+parser = argparse.ArgumentParser(description="ML DL Final Project")
+parser.add_argument('--create-visualizations', action="store_true")
+parser.add_argument('--visualize', nargs="+")
+
+
 if __name__ == "__main__":
-    pre_model = InceptionResNetV2(weights="imagenet", include_top=False, input_shape=(299,299,3))
-    #pre_model = InceptionV3(weights="imagenet")
+    #Parse the arguments
+    args = parser.parse_args()
 
-    """
-    #Useful for finding the layer index you want to visualize
-    for layer in pre_model.layers[:20]:
-        print(layer)
-    sys.exit(0)
-    """
+    #Create the layer visualizations
+    if args.create_visualizations:
+        image_shape = (99,99,3)
+        pre_models = {
+                "vgg16": tf.keras.applications.VGG16(weights="imagenet", include_top=False, input_shape=(image_shape)),
+                "vgg19": tf.keras.applications.VGG19(weights="imagenet", include_top=False, input_shape=(image_shape)),
+                "inception_resnetv2": tf.keras.applications.InceptionResNetV2(weights="imagenet", include_top=False, input_shape=(image_shape))
+        }
+        visualize.create_visualizations(pre_models, image_shape, fr="all")
 
-    #Create sub model
-    outputs = pre_model.layers[300].output
-    sub_model = tf.keras.models.Model(pre_model.layers[0].input, outputs)
-
-    start_image = tf.zeros((1, 299,299,3))
-
-    #fr is the index of the filter being visualized, or "all" to visualize the total layer activation
-    img = visualize.gradient_ascent_loop(sub_model, start_image, 100, 0.001, None, fr=0)
-    visualize.display_learned_image(img[0])
+    #Display a layer visualization given a model name and a filter number
+    elif args.visualize:
+        visualize.load_and_display_activation_image(args.visualize[0], int(args.visualize[1]))
