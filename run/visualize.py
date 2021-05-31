@@ -29,13 +29,13 @@ def create_visualizations(pre_models, image_shape, fr):
             sub_model = tf.keras.models.Model(model.layers[0].input, outputs)
             start_image = tf.zeros((1, image_shape[0], image_shape[1], image_shape[2]))
             #fr is the index of the filter being visualized, or "all" to visualize the total layer activation
-            img = gradient_ascent_loop(sub_model, start_image, 250, 0.001, None, fr=fr)
+            img = gradient_ascent_loop(sub_model, start_image, 250, 0.01, None, fr=fr)
             visualizations.append((layer_number, img.numpy()[0].tolist()))
             print("MODEL: {}    LAYER NUMBER: {}    CONV LAYER NUMBER: {}".format(name, layer_number, conv_layer_number))
             #display_learned_image(img[0])
             conv_layer_number += 1
         print("\n")
-    json.dump(visualizations, open("visualizations/{}.json".format(name), "w"))
+        json.dump(visualizations, open("visualizations/{}.json".format(name), "w"))
 
 
 """
