@@ -20,7 +20,7 @@ def load_learned_images(model_names):
 Graysacles the given image(s)
 """
 def greyscale(images):
-    return np.dot(images[...,:3], [0.299, 0.587, 0.144])
+    return np.dot(images[...,:3], [0.2989, 0.5870, 0.1140])
 
 
 """
