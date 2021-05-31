@@ -17,10 +17,17 @@ def load_learned_images(model_names):
 
 
 """
+Graysacles the given image(s)
+"""
+def greyscale(images):
+    return np.dot(images[...,:3], [0.299, 0.587, 0.144])
+
+
+"""
 Performs cluserting analysis
 """
 def cluster_analysis(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
     for name in model_names:
         print(learned_images[name].shape)
-    
+        print(greyscale(learned_images[name]).shape)
