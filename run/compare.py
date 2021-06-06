@@ -1,7 +1,7 @@
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture 
 from sklearn.cluster import KMeans
-from skimage.measure import compare_ssim
+from skimage.metrics import structural_similarity
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 from itertools import combinations
@@ -41,7 +41,7 @@ def comp_metrics(model_names):
 
     for i in layer_indices:
         for subset in combinations(model_names, 2):
-            metrics.append([i if i < 0 else i + 1, subset, compare_ssim(learned_images[subset[0]][i], learned_images[subset[1]][i]), np.linalg.norm(learned_images[subset[0]][i] - learned_images[subset[1]][i])])
+            metrics.append([i if i < 0 else i + 1, subset, structural_similarity(learned_images[subset[0]][i], learned_images[subset[1]][i]), np.linalg.norm(learned_images[subset[0]][i] - learned_images[subset[1]][i])])
 
     with open("metrics.txt", "w") as f:
         f.write(tabulate(metrics, headers='firstrow', tablefmt="fancy_grid"))
