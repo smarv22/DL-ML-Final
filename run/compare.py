@@ -1,10 +1,13 @@
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture 
 from sklearn.cluster import KMeans
+from skimage.measure import compare_ssim
+import matplotlib.pyplot as plt
+from tabulate import tabulate
+from itertools import combinations
 import numpy as np
 import json
 import sys
-
 
 """
 Loads the learned images and their associated true model layer numbers
@@ -25,6 +28,23 @@ Graysacles the given image(s)
 def greyscale(images):
     return np.dot(images[...,:3], [0.2989, 0.5870, 0.1140])
 
+
+def comp_metrics(model_names):
+    learned_images, true_layer_indexes = load_learned_images(model_names)
+    #Layer indices compared for every combination of models
+    layer_indices = [x for x in range(-3, 3)]
+    #Preset list for columns used by tabulate -- can add more for each metric used
+    metrics = [['Layers', 'Models', 'SSIM', 'L2']]
+    for i, name in enumerate(model_names):
+        learned_images[name] = greyscale(learned_images[name])
+        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
+
+    for i in layer_indices:
+        for subset in combinations(model_names, 2):
+            metrics.append([i if i < 0 else i + 1, subset, compare_ssim(learned_images[subset[0]][i], learned_images[subset[1]][i]), np.linalg.norm(learned_images[subset[0]][i] - learned_images[subset[1]][i])])
+
+    with open("metrics.txt", "w") as f:
+        f.write(tabulate(metrics, headers='firstrow', tablefmt="fancy_grid"))
 
 """
 Clustering
