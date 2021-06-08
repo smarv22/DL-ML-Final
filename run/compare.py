@@ -1,4 +1,4 @@
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, KernelPCA
 from sklearn.mixture import GaussianMixture 
 from sklearn.cluster import KMeans
 from skimage.metrics import structural_similarity
@@ -12,13 +12,20 @@ import sys
 """
 Loads the learned images and their associated true model layer numbers
 """
-def load_learned_images(model_names):
+def load_learned_images(model_names, image_types="layers"):
     learned_images = {}
     true_layer_indexes = {}
     for name in model_names:
-       imgs = json.load(open("visualizations/{}.json".format(name), "r"))
-       true_layer_indexes[name] = [x[0] for x in imgs]
-       learned_images[name] = np.array([x[1] for x in imgs])
+        if image_types == "layers":
+            imgs = json.load(open("visualizations/layers/{}.json".format(name), "r"))
+            true_layer_indexes[name] = [x[0] for x in imgs]
+            learned_images[name] = np.array([x[1] for x in imgs])
+        else:
+            learned_images[name] = {}
+            imgs = json.load(open("visualizations/filters/{}.json".format(name), "r"))
+            true_layer_indexes = [int(x) for x in list(imgs.keys())]
+            for layer, filters in imgs.items():
+                learned_images[name][int(layer)] = np.array(filters)
     return (learned_images, true_layer_indexes)
 
 
@@ -29,6 +36,9 @@ def greyscale(images):
     return np.dot(images[...,:3], [0.2989, 0.5870, 0.1140])
 
 
+"""
+Use traditional metrics to measure similarity
+"""
 def comp_metrics(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
     #Layer indices compared for every combination of models
@@ -64,8 +74,8 @@ def cluster(fit_data, model_names, learned_images, cluster_function):
 Gmm fit predict callback
 Only required becuase sklearn does not provide a fit_predict method on GMM class
 """
-def build_gmm_fit_predict(n_components):
-    gmm = GaussianMixture(n_components=n_components)
+def build_gmm_fit_predict(n_components, n_init=10, max_iter=300):
+    gmm = GaussianMixture(n_components=n_components, n_init=n_init, max_iter=max_iter)
     def gmm_fit_predict(fit_data):
         gmm2 = gmm.fit(fit_data)
         return gmm2.predict(fit_data)
@@ -86,16 +96,24 @@ def cluster_analysis(model_names):
             learned_images[name][q] = learned_images[name][q] - np.amin(learned_images[name][q])
             learned_images[name][q] = learned_images[name][q] - np.amax(learned_images[name][q])
 
+    #Perform linear and non-linear decomposition
+    decomp_trainable = np.concatenate([x for x in learned_images.values()], axis=0)
     #Perform PCA
-    pca = PCA(n_components=50)
-    pca_trainable = np.concatenate([x for x in learned_images.values()], axis=0)
-    reduced_images = pca.fit_transform(pca_trainable)
+    pca = PCA(n_components=100)
+    pca_reduced_images = pca.fit_transform(decomp_trainable)
+    #Perform KPCA
+    kpca = KernelPCA(n_components=100, kernel="poly")
+    kpca_reduced_images = kpca.fit_transform(decomp_trainable)
 
     #Clustering
     #KMeans
-    models_kmeans_clusters = cluster(reduced_images, model_names, learned_images, KMeans(n_clusters=50).fit_predict)
+    models_kmeans_clusters = cluster(kpca_reduced_images, model_names, learned_images, KMeans(n_clusters=15, n_init=100, max_iter=700).fit_predict)
     #Gaussion Mixture Models
-    models_gmms_clusters = cluster(reduced_images, model_names, learned_images,  build_gmm_fit_predict(n_components=50))
+    models_gmms_clusters = cluster(kpca_reduced_images, model_names, learned_images,  build_gmm_fit_predict(n_components=15, n_init=100, max_iter=700))
+    print(models_kmeans_clusters)
+    print()
+    print(models_gmms_clusters)
+    print()
     """
     both models_kmeans_clusters and models_gmms_clusters = {
         vgg16: [
@@ -110,6 +128,52 @@ def cluster_analysis(model_names):
             kmeans/gmms cluster for convolutional  layer 3,
             etc....
         ],
+        etc...
+    }
+    """
+
+
+"""
+Filters cluster analysis
+"""
+def cluster_filters_analysis(model_names, compares):
+    learned_images, true_layer_indexes = load_learned_images(model_names, "filters")
+    print(learned_images.keys())
+    print(learned_images["vgg16"].keys())
+    print(learned_images["vgg16"][1].shape)
+    """
+    true_layer_index is the layer index the filters are for, refer to layers_filters in __main__ for more information
+    learned_images = {
+        vgg16: {
+            true_layer_index: [
+                learned image for filter 0 for true_layer_index, 
+                learned image for filter 1 for true_layer_index,
+                learned image for filter 2 for true_layer_index, 
+                etc...
+            ],
+            true_layer_index: [
+                learned image for filter 0 for true_layer_index, 
+                learned image for filter 1 for true_layer_index,
+                learned image for filter 2 for true_layer_index, 
+                etc...
+            ],
+            etc...
+        }
+        vgg19: {
+            true_layer_index: [
+                learned image for filter 0 for true_layer_index, 
+                learned image for filter 1 for true_layer_index,
+                learned image for filter 2 for true_layer_index, 
+                etc...
+            ],
+            true_layer_index: [
+                learned image for filter 0 for true_layer_index, 
+                learned image for filter 1 for true_layer_index,
+                learned image for filter 2 for true_layer_index, 
+                etc...
+            ],
+            etc..
+        }
         etc...
     }
     """

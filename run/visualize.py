@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import sys
 
 
 """
@@ -16,7 +17,7 @@ def load_and_display_activation_image(model_name, conv_filter_number):
 """
 Create visualizations
 """
-def create_visualizations(pre_models, image_shape, fr):
+def create_full_layer_visualizations(pre_models, image_shape):
     for name, model in pre_models.items():
         visualizations = [] 
         conv_layer_number = 0
@@ -28,13 +29,34 @@ def create_visualizations(pre_models, image_shape, fr):
             sub_model = tf.keras.models.Model(model.layers[0].input, outputs)
             start_image = tf.zeros((1, image_shape[0], image_shape[1], image_shape[2]))
             #fr is the index of the filter being visualized, or "all" to visualize the total layer activation
-            img = gradient_ascent_loop(sub_model, start_image, 250, 0.01, None, fr=fr)
+            img = gradient_ascent_loop(sub_model, start_image, 250, 0.01, None, fr="all")
             visualizations.append((layer_number, img.numpy()[0].tolist()))
+            print()
             print("MODEL: {}    LAYER NUMBER: {}    CONV LAYER NUMBER: {}".format(name, layer_number, conv_layer_number))
-            #display_learned_image(img[0])
+            print()
             conv_layer_number += 1
         print("\n")
-        json.dump(visualizations, open("visualizations/{}.json".format(name), "w"))
+        json.dump(visualizations, open("visualizations/layers/{}.json".format(name), "w"))
+
+
+"""
+Create individual filter visualizations clustered by layer
+"""
+def create_layers_filters_visualizations(models, layers_filters, image_shape):
+    for model, layers in layers_filters.items():
+        visualizations = {} 
+        for layer in layers:
+            visualizations[layer] = []
+            outputs = models[model].layers[layer].output
+            sub_model = tf.keras.models.Model(models[model].layers[0].input, outputs)
+            for i in range(outputs.shape[-1]):
+                start_image = tf.zeros((1, image_shape[0], image_shape[1], image_shape[2]))
+                img = gradient_ascent_loop(sub_model, start_image, 1, 0.01, None, fr=i)
+                visualizations[layer].append(img.numpy()[0].tolist())
+                print()
+                print("MODEL: {}    LAYER NUMBER: {}    FILTER NUMBER: {}".format(model, layer, i))
+                print()
+        json.dump(visualizations, open("visualizations/filters/{}.json".format(model), "w"))
 
 
 """
