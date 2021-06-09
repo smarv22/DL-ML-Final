@@ -24,7 +24,8 @@ if __name__ == "__main__":
         "vgg16": tf.keras.applications.VGG16(weights="imagenet", include_top=False, input_shape=(image_shape)),
         "vgg19": tf.keras.applications.VGG19(weights="imagenet", include_top=False, input_shape=(image_shape)),
         "inception_resnetv2": tf.keras.applications.InceptionResNetV2(weights="imagenet", include_top=False, input_shape=(image_shape)),
-        "mobilenet": tf.keras.applications.MobileNet(weights="imagenet", include_top=False, input_shape=(image_shape))
+        "mobilenet": tf.keras.applications.MobileNet(weights="imagenet", include_top=False, input_shape=(image_shape)),
+        "mobilenetv2": tf.keras.applications.MobileNetV2(weights="imagenet", include_top=False, input_shape=(image_shape))
     }
 
     #The layer index is the true layer index, not the conv layer index

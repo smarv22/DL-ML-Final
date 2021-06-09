@@ -177,7 +177,7 @@ def cluster_filters_analysis(model_names, compares):
         print(compare)
         print(matches)
         print()
-        #Find the nearest neighber by copmuting the ssim difference
+        #Find the nearest neighber by computing the ssim difference
     """
     true_layer_index is the layer index the filters are for, refer to layers_filters in __main__ for more information
     learned_images = {
