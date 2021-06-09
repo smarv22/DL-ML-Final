@@ -9,6 +9,30 @@ import numpy as np
 import json
 import sys
 
+
+def preprocess(model_names, learned_images):
+    """
+    for i, name in enumerate(model_names):
+        learned_images[name] = greyscale(learned_images[name])
+        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
+        for q in range(learned_images[name].shape[0]):
+            learned_images[name][q] = learned_images[name][q] - np.amin(learned_images[name][q])
+            learned_images[name][q] = learned_images[name][q] - np.amax(learned_images[name][q])
+    """
+    for i, name in enumerate(model_names):
+        for q in range(learned_images[name].shape[0]):
+            #Alteration where we change on specific color channels
+            learned_images[name][q][:,:,0] -= np.amin(learned_images[name][q][:,:,0])
+            learned_images[name][q][:,:,0] /= np.amax(learned_images[name][q][:,:,0])
+            learned_images[name][q][:,:,1] -= np.amin(learned_images[name][q][:,:,1])
+            learned_images[name][q][:,:,1] /= np.amax(learned_images[name][q][:,:,1])
+            learned_images[name][q][:,:,2] -= np.amin(learned_images[name][q][:,:,2])
+            learned_images[name][q][:,:,2] /= np.amax(learned_images[name][q][:,:,2])
+        learned_images[name] = greyscale(learned_images[name])
+        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
+    return learned_images
+
+
 """
 Loads the learned images and their associated true model layer numbers
 """
@@ -41,13 +65,11 @@ Use traditional metrics to measure similarity
 """
 def comp_metrics(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
+    learned_images = preprocess(model_names, learned_images)
     #Layer indices compared for every combination of models
     layer_indices = [x for x in range(-3, 3)]
     #Preset list for columns used by tabulate -- can add more for each metric used
     metrics = [['Layers', 'Models', 'SSIM', 'L2']]
-    for i, name in enumerate(model_names):
-        learned_images[name] = greyscale(learned_images[name])
-        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
 
     for i in layer_indices:
         for subset in combinations(model_names, 2):
@@ -82,23 +104,12 @@ def build_gmm_fit_predict(n_components, n_init=10, max_iter=300):
     return gmm_fit_predict
 
 
-
 """
 Performs cluserting analysis
 """
 def cluster_analysis(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
-    for i, name in enumerate(model_names):
-        for q in range(learned_images[name].shape[0]):
-            #Alteration where we change on specific color channels
-            learned_images[name][q][:,:,0] -= np.amin(learned_images[name][q][:,:,0])
-            learned_images[name][q][:,:,0] /= np.amax(learned_images[name][q][:,:,0])
-            learned_images[name][q][:,:,1] -= np.amin(learned_images[name][q][:,:,1])
-            learned_images[name][q][:,:,1] /= np.amax(learned_images[name][q][:,:,1])
-            learned_images[name][q][:,:,2] -= np.amin(learned_images[name][q][:,:,2])
-            learned_images[name][q][:,:,2] /= np.amax(learned_images[name][q][:,:,2])
-        learned_images[name] = greyscale(learned_images[name])
-        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
+    learned_images = preprocess(model_names, learned_images)
 
     #Perform linear and non-linear decomposition
     decomp_trainable = np.concatenate([x for x in learned_images.values()], axis=0)
