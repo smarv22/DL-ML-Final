@@ -9,6 +9,16 @@ import numpy as np
 import json
 import sys
 
+def preprocess(model_names, learned_images):
+    for i, name in enumerate(model_names):
+        learned_images[name] = greyscale(learned_images[name])
+        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
+        for q in range(learned_images[name].shape[0]):
+            learned_images[name][q] = learned_images[name][q] - np.amin(learned_images[name][q])
+            learned_images[name][q] = learned_images[name][q] - np.amax(learned_images[name][q])
+
+    return learned_images
+
 """
 Loads the learned images and their associated true model layer numbers
 """
@@ -41,13 +51,11 @@ Use traditional metrics to measure similarity
 """
 def comp_metrics(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
+    learned_images = preprocess(model_names, learned_images)
     #Layer indices compared for every combination of models
     layer_indices = [x for x in range(-3, 3)]
     #Preset list for columns used by tabulate -- can add more for each metric used
     metrics = [['Layers', 'Models', 'SSIM', 'L2']]
-    for i, name in enumerate(model_names):
-        learned_images[name] = greyscale(learned_images[name])
-        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
 
     for i in layer_indices:
         for subset in combinations(model_names, 2):
@@ -88,13 +96,7 @@ Performs cluserting analysis
 """
 def cluster_analysis(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
-    for i, name in enumerate(model_names):
-        learned_images[name] = greyscale(learned_images[name])
-        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
-        #May want to remove, check if it actually is better
-        for q in range(learned_images[name].shape[0]):
-            learned_images[name][q] = learned_images[name][q] - np.amin(learned_images[name][q])
-            learned_images[name][q] = learned_images[name][q] - np.amax(learned_images[name][q])
+    learned_images = preprocess(model_names, learned_images)
 
     #Perform linear and non-linear decomposition
     decomp_trainable = np.concatenate([x for x in learned_images.values()], axis=0)
@@ -102,7 +104,7 @@ def cluster_analysis(model_names):
     pca = PCA(n_components=100)
     pca_reduced_images = pca.fit_transform(decomp_trainable)
     #Perform KPCA
-    kpca = KernelPCA(n_components=100, kernel="poly")
+    kpca = KernelPCA(n_components=2, kernel="poly")
     kpca_reduced_images = kpca.fit_transform(decomp_trainable)
 
     #Clustering
