@@ -89,27 +89,31 @@ Performs cluserting analysis
 def cluster_analysis(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
     for i, name in enumerate(model_names):
+        for q in range(learned_images[name].shape[0]):
+            #Alteration where we change on specific color channels
+            learned_images[name][q][:,:,0] -= np.amin(learned_images[name][q][:,:,0])
+            learned_images[name][q][:,:,0] /= np.amax(learned_images[name][q][:,:,0])
+            learned_images[name][q][:,:,1] -= np.amin(learned_images[name][q][:,:,1])
+            learned_images[name][q][:,:,1] /= np.amax(learned_images[name][q][:,:,1])
+            learned_images[name][q][:,:,2] -= np.amin(learned_images[name][q][:,:,2])
+            learned_images[name][q][:,:,2] /= np.amax(learned_images[name][q][:,:,2])
         learned_images[name] = greyscale(learned_images[name])
         learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
-        #May want to remove, check if it actually is better
-        for q in range(learned_images[name].shape[0]):
-            learned_images[name][q] = learned_images[name][q] - np.amin(learned_images[name][q])
-            learned_images[name][q] = learned_images[name][q] - np.amax(learned_images[name][q])
 
     #Perform linear and non-linear decomposition
     decomp_trainable = np.concatenate([x for x in learned_images.values()], axis=0)
     #Perform PCA
-    pca = PCA(n_components=100)
+    pca = PCA(n_components=200)
     pca_reduced_images = pca.fit_transform(decomp_trainable)
     #Perform KPCA
-    kpca = KernelPCA(n_components=100, kernel="poly")
+    kpca = KernelPCA(n_components=200, kernel="rbf")
     kpca_reduced_images = kpca.fit_transform(decomp_trainable)
 
     #Clustering
     #KMeans
-    models_kmeans_clusters = cluster(kpca_reduced_images, model_names, learned_images, KMeans(n_clusters=15, n_init=100, max_iter=700).fit_predict)
+    models_kmeans_clusters = cluster(kpca_reduced_images, model_names, learned_images, KMeans(n_clusters=13, n_init=2000, max_iter=700).fit_predict)
     #Gaussion Mixture Models
-    models_gmms_clusters = cluster(kpca_reduced_images, model_names, learned_images,  build_gmm_fit_predict(n_components=15, n_init=100, max_iter=700))
+    models_gmms_clusters = cluster(kpca_reduced_images, model_names, learned_images,  build_gmm_fit_predict(n_components=13, n_init=2000, max_iter=700))
     print(models_kmeans_clusters)
     print()
     print(models_gmms_clusters)
@@ -138,9 +142,30 @@ Filters cluster analysis
 """
 def cluster_filters_analysis(model_names, compares):
     learned_images, true_layer_indexes = load_learned_images(model_names, "filters")
-    print(learned_images.keys())
-    print(learned_images["vgg16"].keys())
-    print(learned_images["vgg16"][1].shape)
+    #Preprocess the learned images
+    for name, layers in learned_images.items():
+        for layer, filters in layers.items():
+            new_filters = np.zeros((filters.shape[0], 99, 99))
+            for i in range(len(filters)):
+                #filters[i] -= np.amin(filters[i])
+                #filters[i] /= np.amax(filters[i])
+                new_filters[i] = greyscale(filters[i])
+            learned_images[name][layer] = new_filters
+    for compare in compares:
+        filters1 = learned_images[compare[0][0]][compare[0][1]]
+        filters2 = learned_images[compare[1][0]][compare[1][1]]
+        matches = []
+        for i in range(len(filters1)):
+            best_match = (0,-100)
+            for q in range(len(filters2)):
+                similarity = structural_similarity(filters1[i], filters2[q])
+                if similarity > best_match[1]:
+                    best_match = (q, similarity)
+            matches.append((i, *best_match))
+        print(compare)
+        print(matches)
+        print()
+        #Find the nearest neighber by copmuting the ssim difference
     """
     true_layer_index is the layer index the filters are for, refer to layers_filters in __main__ for more information
     learned_images = {

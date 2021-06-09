@@ -28,13 +28,14 @@ if __name__ == "__main__":
 
     #The layer index is the true layer index, not the conv layer index
     layers_filters = {
-        "vgg16": [1,2],
-        "vgg19": [1,2],
+        "vgg16": [1,4,17],
+        "vgg19": [1,4,20],
         "inception_resnetv2": []
     }
     layers_filters_compares = [
         (("vgg16", 1), ("vgg19", 1)),
-        (("vgg16", 2), ("vgg19", 2))
+        (("vgg16", 2), ("vgg19", 2)),
+        (("vgg16", 17), ("vgg19", 20))
     ]
 
     #Create the layer visualizations
