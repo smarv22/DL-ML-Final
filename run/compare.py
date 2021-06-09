@@ -10,7 +10,7 @@ import json
 import sys
 
 
-def preprocess(model_names, learned_images):
+def preprocess(model_names, learned_images, flatten=True):
     """
     for i, name in enumerate(model_names):
         learned_images[name] = greyscale(learned_images[name])
@@ -29,7 +29,8 @@ def preprocess(model_names, learned_images):
             learned_images[name][q][:,:,2] -= np.amin(learned_images[name][q][:,:,2])
             learned_images[name][q][:,:,2] /= np.amax(learned_images[name][q][:,:,2])
         learned_images[name] = greyscale(learned_images[name])
-        learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
+        if flatten:
+            learned_images[name] = np.reshape(learned_images[name], (learned_images[name].shape[0], 9801))
     return learned_images
 
 
@@ -65,7 +66,7 @@ Use traditional metrics to measure similarity
 """
 def comp_metrics(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
-    learned_images = preprocess(model_names, learned_images)
+    learned_images = preprocess(model_names, learned_images, flatten=False)
     #Layer indices compared for every combination of models
     layer_indices = [x for x in range(-3, 3)]
     #Preset list for columns used by tabulate -- can add more for each metric used
