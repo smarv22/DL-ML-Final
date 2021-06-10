@@ -271,8 +271,7 @@ def generate_distribution_hbar(k, model_names, models_kmeans_clusters, model_str
 
     plt.figure()
     plt.barh(labels, counts[model_str1].values(), color='c', alpha=0.7)
-    plt.barh(labels, counts[model_str2].values(), alpha=0.7,
-             color='m', left=list(counts[model_str1].values()))
+    plt.barh(labels, counts[model_str2].values(), alpha=0.7, color='m', left=list(counts[model_str1].values()))
     plt.xticks(list(range(0, x_total)))
     plt.xlabel('Distribution')
     plt.yticks(labels, labels)
@@ -289,11 +288,13 @@ def generate_distribution_hbar(k, model_names, models_kmeans_clusters, model_str
 Filters cluster analysis
 """
 def filters_analysis(model_names, compares):
-    learned_images, true_layer_indexes = load_learned_images(
-        model_names, "filters")
+    learned_images, true_layer_indexes = load_learned_images(model_names, "filters")
+    og_s = {}
     # Preprocess the learned images
     for name, layers in learned_images.items():
+        og_s[name] = {}
         for layer, filters in layers.items():
+            og_s[name][layer] = len(filters)
             #Only set the initial size to one, we will remove dead filters from the matched filters
             new_filters = np.zeros((1, 99, 99))
             for i in range(len(filters)):
@@ -330,12 +331,15 @@ def filters_analysis(model_names, compares):
                     best_match = (q, similarity)
             l2_matches.append((i, *best_match))
         row.append("{} layer:{}; {} layer: {}".format(compare[0][0], compare[0][1], compare[1][0], compare[1][1]))
-        row.append("{}: {}; {}: {}".format(compare[0][0], len(filters1), compare[1][0], len(filters2)))
+        row.append("{}: {}/{}; {}: {}/{}".format(compare[0][0], og_s[compare[0][0]][compare[0][1]], len(filters1), compare[1][0], og_s[compare[1][0]][compare[1][1]], len(filters2)))
         row.append(np.mean([x[2] for x in ssim_matches]))
         row.append(np.std([x[2] for x in ssim_matches]))
         row.append(np.mean([x[2] for x in l2_matches]))
         row.append(np.std([x[2] for x in l2_matches]))
         rows.append(row)
 
+    output = tabulate(rows, headers=["Compared Filters From Layers", "Total/Alive Filters", "SSIM MEAN", "SSIM STD", "L2 MEAN", "L2 STD"], tablefmt="fancy_grid")
     with open("filters-analysis.txt", "w") as f:
-        f.write(tabulate(rows, headers=["Compared Filters From Layers", "Alive Filters", "SSIM MEAN", "SSIM STD", "L2 MEAN", "L2 STD"], tablefmt="fancy_grid"))
+        f.write(output)
+    print(output)
+    print("\nAlso wrote results to filters-analysis.txt")
