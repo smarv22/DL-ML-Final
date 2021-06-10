@@ -15,6 +15,19 @@ def load_and_display_activation_image(model_name, conv_filter_number):
 
 
 """
+Create highres visualization
+"""
+def create_highres_visualization(model, layer, fr, image_shape):
+    outputs = model.layers[layer].output
+    sub_model = tf.keras.models.Model(model.layers[0].input, outputs)
+    start_image = tf.zeros((1, image_shape[0], image_shape[1], image_shape[2]))
+    #fr is the index of the filter being visualized, or "all" to visualize the total layer activation
+    img = gradient_ascent_loop(sub_model, start_image, 250, 0.01, None, fr="all")
+    display_learned_image(img[0])
+
+
+
+"""
 Create visualizations
 """
 def create_full_layer_visualizations(pre_models, image_shape):
