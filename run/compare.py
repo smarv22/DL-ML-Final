@@ -83,14 +83,11 @@ Use traditional metrics to measure similarity
 
 def comp_metrics(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
+    learned_images = preprocess(model_names, learned_images, flatten=False)
     # Layer indices compared for every combination of models
     layer_indices = [x for x in range(-3, 3)]
     # Preset list for columns used by tabulate -- can add more for each metric used
     metrics = [['Layers', 'Models', 'SSIM', 'L2']]
-    for i, name in enumerate(model_names):
-        learned_images[name] = greyscale(learned_images[name])
-        learned_images[name] = np.reshape(
-            learned_images[name], (learned_images[name].shape[0], 9801))
 
     for i in layer_indices:
         for subset in combinations(model_names, 2):
@@ -381,7 +378,10 @@ def cluster_filters_analysis(model_names, compares):
                 if similarity > best_match[1]:
                     best_match = (q, similarity)
             matches.append((i, *best_match))
+        print(compare)
+        print(matches)
         print()
+        # Find the nearest neighber by computing the ssim difference
     """
     true_layer_index is the layer index the filters are for, refer to layers_filters in __main__ for more information
     learned_images = {

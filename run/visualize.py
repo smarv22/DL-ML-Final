@@ -51,7 +51,7 @@ def create_layers_filters_visualizations(models, layers_filters, image_shape):
             sub_model = tf.keras.models.Model(models[model].layers[0].input, outputs)
             for i in range(outputs.shape[-1]):
                 start_image = tf.zeros((1, image_shape[0], image_shape[1], image_shape[2]))
-                img = gradient_ascent_loop(sub_model, start_image, 1, 0.01, None, fr=i)
+                img = gradient_ascent_loop(sub_model, start_image, 250, 0.01, None, fr=i)
                 visualizations[layer].append(img.numpy()[0].tolist())
                 print()
                 print("MODEL: {}    LAYER NUMBER: {}    FILTER NUMBER: {}".format(model, layer, i))
