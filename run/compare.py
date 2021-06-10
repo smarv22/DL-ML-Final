@@ -160,9 +160,6 @@ def cluster_analysis(model_names):
     # models_gmms_clusters = cluster(kpca_reduced_images, model_names, learned_images,  build_gmm_fit_predict(
     #     n_components=15, n_init=100, max_iter=700))
     print(models_kmeans_clusters)
-    print()
-    print(true_layer_indexes)
-    sys.exit(0)
     # print(models_gmms_clusters)
 
     centroids = model.cluster_centers_
