@@ -71,10 +71,10 @@ def comp_metrics(model_names):
 
     for i in layer_indices:
         for subset in combinations(model_names, 2):
-            metrics.append([i if i < 0 else i + 1, subset, structural_similarity(learned_images[subset[0]][i],
-                                                                                 learned_images[subset[1]][i]), np.linalg.norm(learned_images[subset[0]][i] - learned_images[subset[1]][i])])
+            metrics.append([i if i < 0 else i + 1, subset, structural_similarity(learned_images[subset[0]][i], learned_images[subset[1]][i]), np.linalg.norm(learned_images[subset[0]][i] - learned_images[subset[1]][i])])
     with open("metrics.txt", "w") as f:
         f.write(tabulate(metrics, headers='firstrow', tablefmt="fancy_grid"))
+    print(true_layer_indexes)
 
 
 """
@@ -138,7 +138,7 @@ def cluster_analysis(model_names):
     pca = PCA(n_components=100)
     pca_reduced_images = pca.fit_transform(decomp_trainable)
     # Perform KPCA
-    kpca = KernelPCA(n_components=100, kernel="poly")
+    kpca = KernelPCA(n_components=9, kernel="poly")
     kpca_reduced_images = kpca.fit_transform(decomp_trainable)
 
     # Generate scatter plots for data, PCA, and Kernel PCA
@@ -149,7 +149,7 @@ def cluster_analysis(model_names):
 
     # Clustering
     # KMeans
-    k = 13
+    k = 21 
     model = KMeans(k, n_init=2000, max_iter=700)
     # model2 = KMeans(k, n_init=2000, max_iter=700)
     models_kmeans_clusters, vals = cluster(kpca_reduced_images, model_names, learned_images, model.fit_predict)
@@ -160,6 +160,7 @@ def cluster_analysis(model_names):
     # models_gmms_clusters = cluster(kpca_reduced_images, model_names, learned_images,  build_gmm_fit_predict(
     #     n_components=15, n_init=100, max_iter=700))
     print(models_kmeans_clusters)
+    print(true_layer_indexes)
     # print(models_gmms_clusters)
 
     centroids = model.cluster_centers_
@@ -178,7 +179,7 @@ def cluster_analysis(model_names):
     # Generate kmeans scatter plot figures for pre-Kernel PCA data
     # Maybe we can use these figures to explain why Kernel PCA was used
     # generate_kmeans_figures(k, model_names, decomp_trainable,
-    #                         models2_kmeans_clusters, centroids2, vals2, str_add='_no kpca')
+    # models2_kmeans_clusters, centroids2, vals2, str_add='_no kpca')
 
     # Generate kmeans scatter plot figures
     generate_kmeans_figures(k, model_names, kpca_reduced_images, models_kmeans_clusters, centroids, vals)
@@ -210,10 +211,8 @@ Plot kmeans for each model
 def generate_kmeans_figures(k, model_names, images, models_kmeans_clusters, centroids, layer_count, str_add=''):
     # Generate Full data plot with centroids
     plt.figure()
-    plt.scatter(images[:, 0],
-                images[:, 1], alpha=0.3)
-    plt.scatter(centroids[:, 0], centroids[:, 1],
-                c='black', alpha=0.8, marker='*')
+    plt.scatter(images[:, 0], images[:, 1], alpha=0.3)
+    plt.scatter(centroids[:, 0], centroids[:, 1], c='black', alpha=0.8, marker='*')
     fig_title = 'Centroids Plot' + str_add
     fig_str = fig_title + '.jpg'
     plt.title(fig_title)
@@ -288,6 +287,8 @@ def layers_analysis(model_names):
     learned_images, true_layer_indexes = load_learned_images(model_names)
     learned_images = preprocess(model_names, learned_images)
     rows = []
+    #OG method, below method appears to work slightly better
+    """
     for subset in combinations(model_names, 2):
         ssim_matches = []
         l2_matches = []
@@ -304,20 +305,34 @@ def layers_analysis(model_names):
             ssim_matches.append((i, *best_ssim))
             l2_matches.append((i, *best_l2))
 
-        rows.append(["{} <-> {} ".format(subset[0], subset[1]), np.mean([x[2] for x in ssim_matches]),
-                     np.std([x[2] for x in ssim_matches]), np.mean([x[2] for x in l2_matches]),
-                     np.std([x[2] for x in l2_matches])])
+        rows.append(["{} <-> {} ".format(subset[0], subset[1]), np.mean([x[2] for x in ssim_matches]), np.std([x[2] for x in ssim_matches]), np.mean([x[2] for x in l2_matches]), np.std([x[2] for x in l2_matches])])
+    """
+
     """ 
     Code snippet to create tables of the most closely related layers in the supplied models 
-    
     for ssim, l2 in zip(ssim_matches, l2_matches):
         if ssim[1] == l2[1]:
             rows.append(["{} layer:{}; {} layer: {}".format(model_1, ssim[0], model_2, ssim[1]), ssim[2], l2[2]])
-
     output = tabulate(rows, headers=["Models and Closest Layers", "SSIM", "L2"], tablefmt="fancy_grid")
     with open("{}-{}-layers-analysis.txt".format(model_1, model_2), "w") as f:
         f.write(output)
     """
+
+    for subset in combinations(model_names, 2):
+        ssim_means = []
+        l2_means = []
+        for i in range(len(learned_images[subset[0]])):
+            ssim_layer_means = []
+            l2_layer_means = []
+            for q in range(len(learned_images[subset[1]])):
+                ssim = structural_similarity(learned_images[subset[0]][i], learned_images[subset[1]][q])
+                l2 = np.linalg.norm(learned_images[subset[0]][i] - learned_images[subset[1]][q])
+                ssim_layer_means.append(ssim)
+                l2_layer_means.append(l2)
+            ssim_means.append(ssim_layer_means)
+            l2_means.append(l2_layer_means)
+
+        rows.append(["{} <-> {} ".format(subset[0], subset[1]), np.mean(ssim_means), np.std(ssim_means), np.mean(l2_means), np.std(l2_means)])
 
 
     output = tabulate(rows, headers=["Models", "SSIM MEAN", "SSIM STD", "L2 MEAN", "L2 STD"], tablefmt="fancy_grid")
@@ -352,6 +367,8 @@ def filters_analysis(model_names, compares):
                 new_filters = np.append(new_filters, [greyscale(filters[i])], axis=0)
             learned_images[name][layer] = new_filters
     rows = []
+    #OG method, below method appears to work slightly better
+    """
     for compare in compares:
         row = []
         filters1 = learned_images[compare[0][0]][compare[0][1]]
@@ -377,9 +394,34 @@ def filters_analysis(model_names, compares):
         row.append(np.std([x[2] for x in ssim_matches]))
         row.append(np.mean([x[2] for x in l2_matches]))
         row.append(np.std([x[2] for x in l2_matches]))
-        rows.append(row)        #replace filters with learned images
+        rows.append(row)
+    """
+    for compare in compares:
+        row = []
+        filters1 = learned_images[compare[0][0]][compare[0][1]]
+        filters2 = learned_images[compare[1][0]][compare[1][1]]
+        ssim_means = []
+        l2_means = []
+        for i in range(len(filters1)):
+            layer_ssims = []
+            layer_l2s = []
+            for q in range(len(filters2)):
+                ssim = structural_similarity(filters1[i], filters2[q])
+                l2 = np.linalg.norm(filters1[i] - filters2[q])
+                layer_ssims.append(ssim)
+                layer_l2s.append(l2)
+            ssim_means.append(np.mean(layer_ssims))
+            l2_means.append(np.mean(layer_l2s))
 
-    output = tabulate(rows, headers=["Compared Filters From Layers", "Total/Alive Filters", "SSIM MEAN", "SSIM STD", "L2 MEAN", "L2 STD"], tablefmt="fancy_grid")
+        row.append("{} layer:{}; {} layer: {}".format(compare[0][0], compare[0][1], compare[1][0], compare[1][1]))
+        row.append("{}: {}/{}; {}: {}/{}".format(compare[0][0], len(filters1), og_s[compare[0][0]][compare[0][1]], compare[1][0], len(filters2), og_s[compare[1][0]][compare[1][1]]))
+        row.append(np.mean(ssim_means))
+        row.append(np.std(ssim_means))
+        row.append(np.mean(l2_means))
+        row.append(np.std(l2_means))
+        rows.append(row)
+
+    output = tabulate(rows, headers=["Compared Filters From Layers", "Alive/Total Filters", "SSIM MEAN", "SSIM STD", "L2 MEAN", "L2 STD"], tablefmt="fancy_grid")
     with open("filters-analysis.txt", "w") as f:
         f.write(output)
     print(output)
