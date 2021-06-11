@@ -367,7 +367,7 @@ def filters_analysis(model_names, compares):
                 if ssim > best_ssim[1]:
                     best_ssim = (q, ssim)
                 if l2 < best_l2[1]:
-                    best_ml2 = (q, l2)
+                    best_l2 = (q, l2)
             l2_matches.append((i, *best_l2))
             ssim_matches.append((i, *best_ssim))
 
