@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import sys
 
 
 """
@@ -136,9 +135,3 @@ def display_learned_image(img):
     plt.xticks([])
     plt.yticks([])
     plt.show()
-    """
-    img = img.numpy() * 255
-    img = img.astype(np.uint8)
-    img = Image.fromarray(img)
-    img.show()
-    """

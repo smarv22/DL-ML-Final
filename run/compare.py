@@ -9,7 +9,6 @@ from tabulate import tabulate
 from itertools import combinations
 import numpy as np
 import json
-import sys
 
 
 def preprocess(model_names, learned_images, flatten=True):
@@ -135,7 +134,7 @@ def cluster_analysis(model_names):
         [x for x in learned_images.values()], axis=0)
 
     # Perform PCA
-    pca = PCA(n_components=100)
+    pca = PCA(n_components=9)
     pca_reduced_images = pca.fit_transform(decomp_trainable)
     # Perform KPCA
     kpca = KernelPCA(n_components=9, kernel="poly")
@@ -159,8 +158,6 @@ def cluster_analysis(model_names):
     # Gaussion Mixture Models
     # models_gmms_clusters = cluster(kpca_reduced_images, model_names, learned_images,  build_gmm_fit_predict(
     #     n_components=15, n_init=100, max_iter=700))
-    print(models_kmeans_clusters)
-    print(true_layer_indexes)
     # print(models_gmms_clusters)
 
     centroids = model.cluster_centers_

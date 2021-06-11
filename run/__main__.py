@@ -1,6 +1,5 @@
 import tensorflow as tf
 import argparse
-import sys
 
 import visualize
 import compare
@@ -36,7 +35,8 @@ if __name__ == "__main__":
 
     # The layer index is the true layer index, not the conv layer index
     layers_filters = {
-        "inception_resnetv2": [1],
+        "vgg16": [1, 4, 17],
+        "vgg19": [1, 4, 17],
         "mobilenet": [1, 77],
         "mobilenetv2": [1, 146]
     }
