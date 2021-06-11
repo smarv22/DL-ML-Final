@@ -12,6 +12,7 @@ parser.add_argument('--create-visualizations-filters', action="store_true")
 parser.add_argument('--visualize', nargs="+")
 parser.add_argument('--cluster', action="store_true")
 parser.add_argument('--filters-analysis', action="store_true")
+parser.add_argument('--layers-analysis', action="store_true")
 parser.add_argument('--create-highres-visualization', nargs="+")
 parser.add_argument('--metrics', action="store_true")
 
@@ -67,6 +68,9 @@ if __name__ == "__main__":
     elif args.filters_analysis:
         compare.filters_analysis(list(models.keys()), layers_filters_compares)
 
+    elif args.layers_analysis:
+        compare.layers_analysis(list(models.keys()))
+
     #Perform basic metrics like l2 and ssim
     elif args.metrics:
         compare.comp_metrics(list(models.keys()))
@@ -78,3 +82,4 @@ if __name__ == "__main__":
         if not fr == "all":
             fr = int(args.create_highres_visualization[2])
         visualize.create_highres_visualization(models[args.create_highres_visualization[0]], int(args.create_highres_visualization[1]), fr, image_shape)
+

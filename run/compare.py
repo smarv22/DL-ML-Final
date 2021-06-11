@@ -284,6 +284,48 @@ def generate_distribution_hbar(k, model_names, models_kmeans_clusters, model_str
     plt.close()
 
 
+def layers_analysis(model_names):
+    learned_images, true_layer_indexes = load_learned_images(model_names)
+    learned_images = preprocess(model_names, learned_images)
+    rows = []
+    for subset in combinations(model_names, 2):
+        ssim_matches = []
+        l2_matches = []
+        for i in range(len(learned_images[subset[0]])):
+            best_ssim = (0, -1)
+            best_l2 = (0, 100000)
+            for q in range(len(learned_images[subset[1]])):
+                ssim = structural_similarity(learned_images[subset[0]][i], learned_images[subset[1]][q])
+                l2 = np.linalg.norm(learned_images[subset[0]][i] - learned_images[subset[1]][q])
+                if ssim > best_ssim[1]:
+                    best_ssim = (q, ssim)
+                if l2 < best_l2[1]:
+                    best_l2 = (q, l2)
+            ssim_matches.append((i, *best_ssim))
+            l2_matches.append((i, *best_l2))
+
+        rows.append(["{} <-> {} ".format(subset[0], subset[1]), np.mean([x[2] for x in ssim_matches]),
+                     np.std([x[2] for x in ssim_matches]), np.mean([x[2] for x in l2_matches]),
+                     np.std([x[2] for x in l2_matches])])
+    """ 
+    Code snippet to create tables of the most closely related layers in the supplied models 
+    
+    for ssim, l2 in zip(ssim_matches, l2_matches):
+        if ssim[1] == l2[1]:
+            rows.append(["{} layer:{}; {} layer: {}".format(model_1, ssim[0], model_2, ssim[1]), ssim[2], l2[2]])
+
+    output = tabulate(rows, headers=["Models and Closest Layers", "SSIM", "L2"], tablefmt="fancy_grid")
+    with open("{}-{}-layers-analysis.txt".format(model_1, model_2), "w") as f:
+        f.write(output)
+    """
+
+
+    output = tabulate(rows, headers=["Models", "SSIM MEAN", "SSIM STD", "L2 MEAN", "L2 STD"], tablefmt="fancy_grid")
+    with open("layers-analysis.txt", "w") as f:
+        f.write(output)
+
+
+
 """
 Filters cluster analysis
 """
@@ -314,7 +356,7 @@ def filters_analysis(model_names, compares):
         row = []
         filters1 = learned_images[compare[0][0]][compare[0][1]]
         filters2 = learned_images[compare[1][0]][compare[1][1]]
-        ssim_matches = []
+        ssim_matches = []       #
         for i in range(len(filters1)):
             best_match = (0, -100)
             for q in range(len(filters2)):
@@ -336,7 +378,7 @@ def filters_analysis(model_names, compares):
         row.append(np.std([x[2] for x in ssim_matches]))
         row.append(np.mean([x[2] for x in l2_matches]))
         row.append(np.std([x[2] for x in l2_matches]))
-        rows.append(row)
+        rows.append(row)        #replace filters with learned images
 
     output = tabulate(rows, headers=["Compared Filters From Layers", "Total/Alive Filters", "SSIM MEAN", "SSIM STD", "L2 MEAN", "L2 STD"], tablefmt="fancy_grid")
     with open("filters-analysis.txt", "w") as f:
