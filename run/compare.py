@@ -356,22 +356,21 @@ def filters_analysis(model_names, compares):
         row = []
         filters1 = learned_images[compare[0][0]][compare[0][1]]
         filters2 = learned_images[compare[1][0]][compare[1][1]]
-        ssim_matches = []       #
-        for i in range(len(filters1)):
-            best_match = (0, -100)
-            for q in range(len(filters2)):
-                similarity = structural_similarity(filters1[i], filters2[q])
-                if similarity > best_match[1]:
-                    best_match = (q, similarity)
-            ssim_matches.append((i, *best_match))
+        ssim_matches = []
         l2_matches = []
         for i in range(len(filters1)):
-            best_match = (0, 100000)
+            best_ssim = (0, -100)
+            best_l2 = (0, 100000)
             for q in range(len(filters2)):
-                similarity = np.linalg.norm(filters1[i] - filters2[q])
-                if similarity < best_match[1]:
-                    best_match = (q, similarity)
-            l2_matches.append((i, *best_match))
+                ssim = structural_similarity(filters1[i], filters2[q])
+                l2 = np.linalg.norm(filters1[i] - filters2[q])
+                if ssim > best_ssim[1]:
+                    best_ssim = (q, ssim)
+                if l2 < best_l2[1]:
+                    best_ml2 = (q, l2)
+            l2_matches.append((i, *best_l2))
+            ssim_matches.append((i, *best_ssim))
+
         row.append("{} layer:{}; {} layer: {}".format(compare[0][0], compare[0][1], compare[1][0], compare[1][1]))
         row.append("{}: {}/{}; {}: {}/{}".format(compare[0][0], og_s[compare[0][0]][compare[0][1]], len(filters1), compare[1][0], og_s[compare[1][0]][compare[1][1]], len(filters2)))
         row.append(np.mean([x[2] for x in ssim_matches]))
